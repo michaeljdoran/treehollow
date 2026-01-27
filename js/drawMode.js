@@ -8,9 +8,10 @@ const DrawMode = (function() {
     let currentStroke = null;
     let animationId = null;
 
-    const FADE_DURATION = 12000;
+    const FADE_DELAY = 2000;
+    const FADE_DURATION = 4000;
     const STROKE_COLOR = { r: 245, g: 240, b: 230 };
-    const LINE_WIDTH = 3;
+    const LINE_WIDTH = 5;
 
     function resizeCanvas() {
         canvas.width = window.innerWidth;
@@ -40,8 +41,7 @@ const DrawMode = (function() {
         const pos = getPosition(e);
 
         currentStroke = {
-            points: [{ x: pos.x, y: pos.y, pressure: pos.pressure }],
-            timestamp: Date.now()
+            points: [{ x: pos.x, y: pos.y, pressure: pos.pressure, timestamp: Date.now() }]
         };
     }
 
@@ -53,7 +53,8 @@ const DrawMode = (function() {
         currentStroke.points.push({
             x: pos.x,
             y: pos.y,
-            pressure: pos.pressure
+            pressure: pos.pressure,
+            timestamp: Date.now()
         });
     }
 
@@ -69,28 +70,66 @@ const DrawMode = (function() {
         isDrawing = false;
     }
 
-    function drawStroke(stroke, opacity) {
+    function drawStroke(stroke, now, isCurrentStroke) {
         if (stroke.points.length < 2) return;
 
-        ctx.beginPath();
-        ctx.strokeStyle = `rgba(${STROKE_COLOR.r}, ${STROKE_COLOR.g}, ${STROKE_COLOR.b}, ${opacity})`;
         ctx.lineWidth = LINE_WIDTH;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-
-        for (let i = 1; i < stroke.points.length - 1; i++) {
+        for (let i = 0; i < stroke.points.length - 1; i++) {
             const p0 = stroke.points[i];
             const p1 = stroke.points[i + 1];
-            const midX = (p0.x + p1.x) / 2;
-            const midY = (p0.y + p1.y) / 2;
-            ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+
+            let opacity;
+            if (isCurrentStroke) {
+                opacity = 0.8;
+            } else {
+                const age = now - p0.timestamp;
+                if (age < FADE_DELAY) {
+                    opacity = 0.8;
+                } else {
+                    opacity = Math.max(0, (1 - (age - FADE_DELAY) / FADE_DURATION) * 0.8);
+                }
+            }
+
+            if (opacity <= 0) continue;
+
+            const color = `rgba(${STROKE_COLOR.r}, ${STROKE_COLOR.g}, ${STROKE_COLOR.b}, ${opacity})`;
+
+            // Draw circle at point to smooth joints
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(p0.x, p0.y, LINE_WIDTH / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw line segment
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.stroke();
         }
 
+        // Draw final point
         const lastPoint = stroke.points[stroke.points.length - 1];
-        ctx.lineTo(lastPoint.x, lastPoint.y);
-        ctx.stroke();
+        let lastOpacity;
+        if (isCurrentStroke) {
+            lastOpacity = 0.8;
+        } else {
+            const age = now - lastPoint.timestamp;
+            if (age < FADE_DELAY) {
+                lastOpacity = 0.8;
+            } else {
+                lastOpacity = Math.max(0, (1 - (age - FADE_DELAY) / FADE_DURATION) * 0.8);
+            }
+        }
+        if (lastOpacity > 0) {
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(${STROKE_COLOR.r}, ${STROKE_COLOR.g}, ${STROKE_COLOR.b}, ${lastOpacity})`;
+            ctx.arc(lastPoint.x, lastPoint.y, LINE_WIDTH / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     function render() {
@@ -103,16 +142,16 @@ const DrawMode = (function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         strokes = strokes.filter(stroke => {
-            const age = now - stroke.timestamp;
-            if (age >= FADE_DURATION) return false;
+            const lastPoint = stroke.points[stroke.points.length - 1];
+            const age = now - lastPoint.timestamp;
+            if (age >= FADE_DELAY + FADE_DURATION) return false;
 
-            const opacity = 1 - (age / FADE_DURATION);
-            drawStroke(stroke, opacity * 0.8);
+            drawStroke(stroke, now, false);
             return true;
         });
 
         if (currentStroke && currentStroke.points.length > 1) {
-            drawStroke(currentStroke, 0.8);
+            drawStroke(currentStroke, now, true);
         }
 
         animationId = requestAnimationFrame(render);

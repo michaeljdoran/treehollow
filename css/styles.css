@@ -14,6 +14,39 @@ html, body {
     user-select: none;
 }
 
+#welcome-hint {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f5f0e6;
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 10px rgba(245, 240, 230, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    animation: hintFade 3s ease-in-out forwards;
+}
+
+@keyframes hintFade {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    15% {
+        opacity: 0.7;
+        transform: translateX(-50%) translateY(0);
+    }
+    70% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
 #letter-container {
     position: fixed;
     top: 0;
@@ -118,7 +151,7 @@ html, body {
     height: 6px;
     background: #f5f0e6;
     border-radius: 50%;
-    opacity: 0.2;
+    opacity: 0.3;
     transition: opacity 0.4s ease;
 }
 
@@ -128,10 +161,9 @@ html, body {
     font-size: 2rem;
     letter-spacing: 0.15em;
     text-transform: lowercase;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    pointer-events: none;
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+    pointer-events: auto;
 }
 
 #nav-menu:hover .nav-dot {
@@ -140,8 +172,6 @@ html, body {
 
 #nav-menu:hover .nav-link {
     opacity: 0.6;
-    transform: translateX(0);
-    pointer-events: auto;
 }
 
 .nav-link:hover {
@@ -149,6 +179,13 @@ html, body {
 }
 
 @media (max-width: 600px) {
+    #welcome-hint {
+        top: 60px;
+        font-size: 1.5rem;
+        padding: 0 20px;
+        text-align: center;
+    }
+
     .letter {
         font-size: 1.5rem;
     }

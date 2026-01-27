@@ -65,8 +65,20 @@ a:hover {
     opacity: 1;
 }
 
+.privacy {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(245, 240, 230, 0.1);
+}
+
+.privacy p {
+    font-size: 0.95rem;
+    opacity: 0.5;
+    margin-bottom: 0;
+}
+
 .contact {
-    margin-top: 80px;
+    margin-top: 40px;
     padding-top: 40px;
     border-top: 1px solid rgba(245, 240, 230, 0.1);
 }
